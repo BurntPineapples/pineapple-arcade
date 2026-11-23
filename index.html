@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pineapple Arcade</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍍</text></svg>">
+<style>
+:root{--bg:#0b0b14;--panel:#141425;--card:#1b1b30;--line:#2a2a45;--text:#ecebff;--dim:#9a98c0;--a:#ffc83d;--b:#ff4fa3;--c:#5ad1ff}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(1200px 600px at 10% -10%,#2a1846 0,transparent 60%),radial-gradient(900px 500px at 100% 0,#10324a 0,transparent 55%),var(--bg);color:var(--text);font:15px/1.4 system-ui,"Segoe UI",sans-serif;min-height:100vh}
+a{color:inherit}
+header{position:sticky;top:0;z-index:5;display:flex;gap:14px;align-items:center;padding:14px 24px;background:rgba(11,11,20,.78);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.logo{font-weight:800;font-size:22px;letter-spacing:-.5px;white-space:nowrap;cursor:pointer;text-decoration:none}
+.logo span{background:linear-gradient(90deg,var(--a),var(--b));-webkit-background-clip:text;background-clip:text;color:transparent}
+.search{flex:1;max-width:640px;position:relative}
+.search input{width:100%;padding:12px 16px 12px 44px;border-radius:14px;border:1px solid var(--line);background:var(--panel);color:var(--text);font-size:16px;outline:none;transition:.15s}
+.search input:focus{border-color:var(--b);box-shadow:0 0 0 4px rgba(255,79,163,.18)}
+.search svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);opacity:.6}
+.search kbd{position:absolute;right:12px;top:50%;transform:translateY(-50%);font:12px monospace;color:var(--dim);border:1px solid var(--line);border-radius:6px;padding:2px 6px}
+.btn{border:1px solid var(--line);background:var(--panel);color:var(--text);padding:10px 14px;border-radius:12px;cursor:pointer;font:inherit;white-space:nowrap;transition:.15s}
+.btn:hover{border-color:var(--a);transform:translateY(-1px)}
+.btn.hot{background:linear-gradient(90deg,var(--a),var(--b));color:#1a0b1a;border:0;font-weight:700}
+main{padding:18px 24px 60px;max-width:1500px;margin:0 auto}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:4px 0 14px;scrollbar-width:none}
+.chip{flex:none;padding:7px 14px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--dim);cursor:pointer;text-transform:capitalize;font-size:14px}
+.chip.on{color:#140a14;background:var(--a);border-color:var(--a);font-weight:700}
+h2{font-size:19px;margin:22px 0 12px;display:flex;align-items:center;gap:10px}
+h2 small{color:var(--dim);font-weight:400;font-size:14px}
+.row{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(170px,190px);gap:14px;overflow-x:auto;padding-bottom:6px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px}
+.card{position:relative;border-radius:16px;overflow:hidden;background:var(--card);border:1px solid var(--line);cursor:pointer;transition:transform .15s,box-shadow .15s;text-decoration:none;display:block}
+.card:hover{transform:translateY(-4px) scale(1.02);box-shadow:0 12px 30px rgba(0,0,0,.5),0 0 0 2px var(--b)}
+.thumb{aspect-ratio:1;width:100%;object-fit:cover;display:block;background:linear-gradient(135deg,#2a1846,#10324a)}
+.card .name{position:absolute;inset:auto 0 0;padding:28px 10px 9px;background:linear-gradient(transparent,rgba(0,0,0,.88));font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.badge{position:absolute;top:8px;left:8px;font-size:11px;font-weight:800;padding:3px 7px;border-radius:7px;background:var(--b);color:#fff}
+.badge.new{background:var(--c);color:#04212e}
+.fav{position:absolute;top:6px;right:6px;width:30px;height:30px;border-radius:50%;border:0;background:rgba(0,0,0,.55);color:#fff;cursor:pointer;font-size:15px;opacity:0;transition:.15s}
+.card:hover .fav,.fav.on{opacity:1}.fav.on{color:var(--a)}
+.empty{color:var(--dim);padding:40px 0;text-align:center}
+#player{position:fixed;inset:0;z-index:10;background:var(--bg);display:none;flex-direction:column}
+#player.open{display:flex}
+.pbar{display:flex;gap:10px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--panel)}
+.pbar h1{font-size:18px;margin:0 auto 0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pwrap{flex:1;display:flex;min-height:0}
+#frame{flex:1;border:0;background:#000;min-width:0}
+.side{width:250px;overflow-y:auto;padding:12px;border-left:1px solid var(--line);display:flex;flex-direction:column;gap:10px}
+.side .card{flex:none}.side .thumb{aspect-ratio:16/10}.side .card .name{font-size:13px}
+.note{color:var(--dim);font-size:12px;padding:4px 2px}
+@media(max-width:800px){header{flex-wrap:wrap;padding:12px}.search{order:3;flex-basis:100%;max-width:none}.side{display:none}main{padding:12px}.hide-sm{display:none}}
+</style>
+</head>
+<body>
+<header>
+  <a class="logo" href="#" onclick="home();return false">🍍 <span>Pineapple Arcade</span></a>
+  <label class="search">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+    <input id="q" type="search" placeholder="Search games… typos are fine" autocomplete="off">
+    <kbd class="hide-sm">/</kbd>
+  </label>
+  <button class="btn hot" onclick="play(rand())">🎲 Random</button>
+  <button class="btn hide-sm" onclick="backup()" title="Download favorites, history & play time">⬇ Backup</button>
+  <button class="btn hide-sm" onclick="document.getElementById('restore').click()" title="Restore from a backup file">⬆ Restore</button>
+  <input id="restore" type="file" accept=".json" hidden>
+</header>
+<main>
+  <div class="chips" id="chips"></div>
+  <div id="shelves"></div>
+  <h2 id="allTitle"></h2>
+  <div class="grid" id="grid"></div>
+</main>
+<div id="player">
+  <div class="pbar">
+    <button class="btn" onclick="location.hash=''">← Back</button>
+    <h1 id="ptitle"></h1>
+    <button class="btn" id="pfav"></button>
+    <button class="btn" onclick="load(frame.src)" title="Restart">↻</button>
+    <button class="btn" onclick="frame.requestFullscreen()" title="Fullscreen">⛶ Fullscreen</button>
+    <button class="btn hide-sm" onclick="play(rand())">🎲</button>
+  </div>
+  <div class="pwrap">
+    <iframe id="frame" allow="fullscreen; autoplay; gamepad; pointer-lock; clipboard-write" allowfullscreen></iframe>
+    <div class="side"><div class="note">💾 Your progress saves automatically on this device. More like this:</div><div id="related" style="display:contents"></div></div>
+  </div>
+</div>
+<script src="search.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+let frame = $('frame');
+// fresh iframe per load so games never add entries to the browser's back history
+function load(url) { const f = frame.cloneNode(); f.src = url; frame.replaceWith(f); frame = f; }
+const store = {
+  get: (k, d) => { try { return JSON.parse(localStorage.getItem('pa_' + k)) ?? d } catch { return d } },
+  set: (k, v) => localStorage.setItem('pa_' + k, JSON.stringify(v))
+};
+let games = [], byId = {}, favs = new Set(store.get('favs', [])), recent = store.get('recent', []), time = store.get('time', {});
+let cat = store.get('cat', 'all'), playing = null, started = 0;
+navigator.storage?.persist?.(); // ask browser not to evict game saves
+
+const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+const rand = () => games[Math.random() * games.length | 0].id;
+const fmt = s => s < 3600 ? Math.round(s / 60) + 'm' : (s / 3600).toFixed(1) + 'h';
+
+function card(g) {
+  const badge = g.hot ? '<span class="badge">HOT</span>' : g.new ? '<span class="badge new">NEW</span>' : '';
+  return `<a class="card" href="#play/${g.id}" title="${esc(g.t)}">${badge}
+    <img class="thumb" loading="lazy" src="${g.img}" alt="" onerror="this.style.visibility='hidden'">
+    <button class="fav ${favs.has(g.id) ? 'on' : ''}" data-fav="${g.id}" title="Favorite">★</button>
+    <div class="name">${esc(g.t)}</div></a>`;
+}
+const shelf = (title, list) => list.length ? `<h2>${title} <small>${list.length}</small></h2><div class="row">${list.map(card).join('')}</div>` : '';
+
+function render() {
+  const q = $('q').value.trim();
+  let list = cat === 'all' ? games : cat === 'favorites' ? games.filter(g => favs.has(g.id)) : cat === 'hot' ? games.filter(g => g.hot) : games.filter(g => g.c.includes(cat));
+  if (q) list = search(q, list);
+  $('shelves').innerHTML = q || cat !== 'all' ? '' :
+    shelf('▶ Continue playing', recent.map(id => byId[id]).filter(Boolean)) +
+    shelf('★ Favorites', games.filter(g => favs.has(g.id))) +
+    shelf('🔥 Popular', games.filter(g => g.hot).sort(() => .5 - Math.random()).slice(0, 24));
+  $('allTitle').innerHTML = (q ? `Results for “${esc(q)}”` : cat === 'all' ? 'All games' : cat[0].toUpperCase() + cat.slice(1)) + ` <small>${list.length}</small>`;
+  $('grid').innerHTML = list.length ? list.map(card).join('') : `<div class="empty">Nothing found for “${esc(q)}”. Try fewer words.</div>`;
+}
+
+function chips() {
+  const counts = {};
+  games.forEach(g => g.c.forEach(c => counts[c] = (counts[c] || 0) + 1));
+  const cats = ['all', 'favorites', 'hot', ...Object.keys(counts).sort((a, b) => counts[b] - counts[a])];
+  if (!cats.includes(cat)) cat = 'all';
+  $('chips').innerHTML = cats.map(c => `<button class="chip ${c === cat ? 'on' : ''}" data-cat="${c}">${{ all: '🎮 All', favorites: '★ Favorites', hot: '🔥 Popular' }[c] || c.replace('-', ' ')}</button>`).join('');
+}
+
+function stopTimer() {
+  if (playing && started) { time[playing] = (time[playing] || 0) + (Date.now() - started) / 1000; store.set('time', time); }
+  started = 0;
+}
+function play(id) { location.hash = 'play/' + id; }
+function home() { $('q').value = ''; cat = 'all'; chips(); location.hash = ''; render(); scrollTo(0, 0); }
+
+function route() {
+  const m = location.hash.match(/^#play\/(\d+)/), g = m && byId[m[1]];
+  stopTimer();
+  if (!g) { playing = null; load('about:blank'); $('player').classList.remove('open'); document.title = 'Pineapple Arcade'; render(); return; }
+  playing = g.id; started = Date.now();
+  recent = [g.id, ...recent.filter(x => x !== g.id)].slice(0, 20); store.set('recent', recent);
+  $('player').classList.add('open');
+  $('ptitle').textContent = g.t; document.title = g.t + ' · Pineapple Arcade';
+  if (frame.src !== g.u) load(g.u);
+  favBtn();
+  const rel = games.filter(x => x.id !== g.id && x.c.some(c => g.c.includes(c))).sort(() => .5 - Math.random()).slice(0, 12);
+  $('related').innerHTML = rel.map(card).join('');
+}
+function favBtn() { $('pfav').textContent = favs.has(playing) ? '★ Favorited' : '☆ Favorite'; }
+function toggleFav(id) { favs.has(id) ? favs.delete(id) : favs.add(id); store.set('favs', [...favs]); }
+
+function backup() {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify({ favs: [...favs], recent, time })], { type: 'application/json' }));
+  a.download = 'pineapple-arcade-backup.json'; a.click();
+}
+$('restore').onchange = async e => {
+  try {
+    const d = JSON.parse(await e.target.files[0].text());
+    favs = new Set(d.favs || []); recent = d.recent || []; time = d.time || {};
+    store.set('favs', [...favs]); store.set('recent', recent); store.set('time', time); render(); alert('Restored!');
+  } catch { alert('That file isn’t a Pineapple Arcade backup.'); }
+  e.target.value = '';
+};
+
+document.addEventListener('click', e => {
+  const f = e.target.closest('[data-fav]');
+  if (f) { e.preventDefault(); toggleFav(+f.dataset.fav); f.classList.toggle('on'); if (cat === 'favorites') render(); return; }
+  const c = e.target.closest('[data-cat]');
+  if (c) { cat = c.dataset.cat; store.set('cat', cat); chips(); render(); }
+});
+$('pfav').onclick = () => { toggleFav(playing); favBtn(); };
+let t; $('q').oninput = () => { clearTimeout(t); t = setTimeout(render, 120); };
+$('q').onkeydown = e => { if (e.key === 'Enter') { const r = $('grid').querySelector('.card'); if (r) location.hash = r.getAttribute('href'); } };
+document.addEventListener('keydown', e => { if (e.key === '/' && document.activeElement !== $('q') && !playing) { e.preventDefault(); $('q').focus(); } });
+addEventListener('hashchange', route);
+addEventListener('pagehide', stopTimer);
+document.addEventListener('visibilitychange', () => document.hidden ? stopTimer() : playing && (started = Date.now()));
+
+fetch('games.json').then(r => r.json()).then(d => {
+  games = d; games.forEach(g => byId[g.id] = g);
+  chips(); route();
+});
+</script>
+</body>
+</html>
