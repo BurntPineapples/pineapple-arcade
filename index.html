@@ -123,14 +123,14 @@ const shelf = (title, list) => list.length ? `<h2>${title} <small>${list.length}
 
 function render() {
   const q = $('q').value.trim();
-  list = cat === 'all' ? games : cat === 'favorites' ? games.filter(g => favs.has(g.id)) : cat === 'hot' ? games.filter(g => g.hot) : games.filter(g => g.c.includes(cat));
+  list = cat === 'all' ? games : cat === 'favorites' ? games.filter(g => favs.has(g.id)) : cat === 'hot' ? games.filter(g => g.hot) : cat === 'noads' ? games.filter(g => !g.ads) : games.filter(g => g.c.includes(cat));
   if (q) list = search(q, list);
   $('shelves').innerHTML = q || cat !== 'all' ? '' :
     shelf('▶ Continue playing', recent.map(id => byId[id]).filter(Boolean)) +
     shelf('★ Favorites', games.filter(g => favs.has(g.id))) +
     shelf('🔥 Popular', games.filter(g => g.hot).sort(() => .5 - Math.random()).slice(0, 24));
   document.querySelectorAll('.rowwrap').forEach(w => w.classList.toggle('fit', w.querySelector('.row').scrollWidth <= w.clientWidth + 4));
-  $('allTitle').innerHTML = (q ? `Results for “${esc(q)}”` : cat === 'all' ? 'All games' : cat[0].toUpperCase() + cat.slice(1)) + ` <small>${list.length}</small>`;
+  $('allTitle').innerHTML = (q ? `Results for “${esc(q)}”` : cat === 'all' ? 'All games' : cat === 'noads' ? 'No-ad games' : cat[0].toUpperCase() + cat.slice(1)) + ` <small>${list.length}</small>`;
   $('grid').innerHTML = list.length ? '' : `<div class="empty">Nothing found for “${esc(q)}”. Try fewer words.</div>`;
   shown = 0; more();
 }
@@ -145,9 +145,9 @@ new IntersectionObserver(e => e[0].isIntersecting && more(), { rootMargin: '1200
 function chips() {
   const counts = {};
   games.forEach(g => g.c.forEach(c => counts[c] = (counts[c] || 0) + 1));
-  const cats = ['all', 'favorites', 'hot', ...Object.keys(counts).filter(c => counts[c] >= 40).sort((a, b) => counts[b] - counts[a])];
+  const cats = ['all', 'favorites', 'hot', 'noads', ...Object.keys(counts).filter(c => counts[c] >= 40).sort((a, b) => counts[b] - counts[a])];
   if (!cats.includes(cat)) cat = 'all';
-  $('chips').innerHTML = cats.map(c => `<button class="chip ${c === cat ? 'on' : ''}" data-cat="${c}">${{ all: '🎮 All', favorites: '★ Favorites', hot: '🔥 Popular' }[c] || c.replace('-', ' ')}</button>`).join('');
+  $('chips').innerHTML = cats.map(c => `<button class="chip ${c === cat ? 'on' : ''}" data-cat="${c}">${{ all: '🎮 All', favorites: '★ Favorites', hot: '🔥 Popular', noads: '🚫 No ads' }[c] || c.replace('-', ' ')}</button>`).join('');
 }
 
 function stopTimer() {
@@ -212,6 +212,7 @@ fetch('games.json').then(r => r.json()).then(d => {
   for (const g of games) {
     if (g.s) { [g.u, g.img] = src[g.s](g.k); g.id = g.s + '-' + g.k.slice(0, 10); }
     g.id = String(g.id); byId[g.id] = g;
+    g.ads = g.id.includes('-'); // GameDistribution/GameMonetize games run their own ads; the original 895 don't
   }
   chips(); route();
 });
