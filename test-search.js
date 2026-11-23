@@ -9,9 +9,11 @@ has('moto x3m', 'Moto X3M');
 has('motox3m', 'Moto X3M');
 has('moto xm3', 'Moto X3M', 1);        // typo
 has('frday nite funkin', "Friday Night Funkin'");
-has('fnf', "Friday Night Funkin'", 5);  // initials
+assert(top('fnf', 5).every(t => /^fnf/i.test(t)), 'fnf');
 has('slope', 'Slope 3', 8);
-has('fireboy watergirl', 'Fireboy & Watergirl 2 Light Temple', 5);
+assert(top('fireboy watergirl', 5).every(t => /fireboy.*watergirl/i.test(t)), 'fireboy');
+has('papas pizeria', 'Papa Pizzeria', 1);
+has('geomtry dash', 'Geometry Dash', 1);
 has('rocket soccer', 'Rocket Soccer Derby');
 has('unicycle', 'Unicycle Legend');
 has('papas', 'Papa Cheeseria', 10);

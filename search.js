@@ -25,7 +25,7 @@ function tokenScore(tok, words, compact) {
     if (w === tok) return 4;
     if (w.startsWith(tok)) best = Math.max(best, 3);
     else if (w.includes(tok)) best = Math.max(best, 2);
-    else if (tol && (lev(tok, w) <= tol || lev(tok, w.slice(0, tok.length)) <= tol))best = Math.max(best, 1.5);
+    else if (tol && best < 1.5 && (tok[0] === w[0] || tok[1] === w[1]) && (lev(tok, w) <= tol || lev(tok, w.slice(0, tok.length)) <= tol)) best = 1.5; // first-letters gate skips most typo checks
   }
   if (!best && tok.length >= 3 && compact.includes(tok)) best = 2;
   return best;
@@ -35,13 +35,18 @@ function tokenScore(tok, words, compact) {
 function score(q, game) {
   const nq = norm(q);
   if (!nq) return 1;
-  const title = norm(game.t), compact = title.replace(/ /g, ''), cq = nq.replace(/ /g, '');
-  const words = title.split(' '), cats = (game.c || []).map(norm);
+  const cq = nq.replace(/ /g, '');
+  // normalized title parts cached on the game; 30k games re-normalized per keystroke is the slow part
+  const p = game._p || (game._p = (() => {
+    const title = norm(game.t), words = title.split(' ');
+    return { title, words, compact: title.replace(/ /g, ''), initials: words.map(w => w[0]).join(''), cats: (game.c || []).map(norm) };
+  })());
+  const { title, words, compact, cats } = p;
   let s = 0;
   if (title === nq || compact === cq) s += 20;
   else if (compact.startsWith(cq)) s += 12;
   else if (compact.includes(cq)) s += 8;
-  if (cq.length >= 2 && words.map(w => w[0]).join('').startsWith(cq)) s += 7; // initials: "fnf"
+  if (cq.length >= 2 && p.initials.startsWith(cq)) s += 7; // initials: "fnf"
   const toks = nq.split(' ');
   let hit = 0;
   for (const tok of toks) {
@@ -51,6 +56,7 @@ function score(q, game) {
     s += ts;
   }
   if (hit < Math.ceil(toks.length / 2) && s < 7) return 0;
+  if (toks.length > 1 && hit === toks.length) s += 3; // every word matched beats one exact word
   if (!s && cq.length >= 4 && isSubseq(cq, compact)) s = 0.5;
   return s;
 }

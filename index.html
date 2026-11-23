@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Pineapple Arcade</title>
+<!-- anonymous visit/play counts (no cookies, no personal data); daily summary is sent by .github/workflows/daily-stats.yml -->
+<script data-goatcounter="https://pineapplearcade.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍍</text></svg>">
 <style>
 :root{--bg:#0b0b14;--panel:#141425;--card:#1b1b30;--line:#2a2a45;--text:#ecebff;--dim:#9a98c0;--a:#ffc83d;--b:#ff4fa3;--c:#5ad1ff}
@@ -27,7 +29,15 @@ main{padding:18px 24px 60px;max-width:1500px;margin:0 auto}
 .chip.on{color:#140a14;background:var(--a);border-color:var(--a);font-weight:700}
 h2{font-size:19px;margin:22px 0 12px;display:flex;align-items:center;gap:10px}
 h2 small{color:var(--dim);font-weight:400;font-size:14px}
-.row{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(170px,190px);gap:14px;overflow-x:auto;padding-bottom:6px}
+.row{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(170px,190px);gap:14px;overflow-x:auto;scroll-behavior:smooth;scrollbar-width:none;padding:4px 2px 8px}
+.row::-webkit-scrollbar{display:none}
+.rowwrap{position:relative}
+.arrow{position:absolute;top:4px;bottom:8px;width:52px;border:0;z-index:2;cursor:pointer;color:#fff;font-size:30px;opacity:0;transition:opacity .15s}
+.arrow.l{left:0;border-radius:16px 0 0 16px;background:linear-gradient(90deg,rgba(11,11,20,.95),transparent)}
+.arrow.r{right:0;border-radius:0 16px 16px 0;background:linear-gradient(270deg,rgba(11,11,20,.95),transparent)}
+.rowwrap:hover .arrow{opacity:1}.rowwrap.fit .arrow{display:none}.arrow:hover{color:var(--a)}
+html,.side{scrollbar-width:thin;scrollbar-color:#3a3a60 transparent}
+#more{height:1px}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px}
 .card{position:relative;border-radius:16px;overflow:hidden;background:var(--card);border:1px solid var(--line);cursor:pointer;transition:transform .15s,box-shadow .15s;text-decoration:none;display:block}
 .card:hover{transform:translateY(-4px) scale(1.02);box-shadow:0 12px 30px rgba(0,0,0,.5),0 0 0 2px var(--b)}
@@ -68,6 +78,7 @@ h2 small{color:var(--dim);font-weight:400;font-size:14px}
   <div id="shelves"></div>
   <h2 id="allTitle"></h2>
   <div class="grid" id="grid"></div>
+  <div id="more"></div>
 </main>
 <div id="player">
   <div class="pbar">
@@ -93,13 +104,13 @@ const store = {
   get: (k, d) => { try { return JSON.parse(localStorage.getItem('pa_' + k)) ?? d } catch { return d } },
   set: (k, v) => localStorage.setItem('pa_' + k, JSON.stringify(v))
 };
-let games = [], byId = {}, favs = new Set(store.get('favs', [])), recent = store.get('recent', []), time = store.get('time', {});
+let games = [], byId = {}, favs = new Set(store.get('favs', []).map(String)), recent = store.get('recent', []).map(String), time = store.get('time', {});
+let list = [], shown = 0;
 let cat = store.get('cat', 'all'), playing = null, started = 0;
 navigator.storage?.persist?.(); // ask browser not to evict game saves
 
 const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const rand = () => games[Math.random() * games.length | 0].id;
-const fmt = s => s < 3600 ? Math.round(s / 60) + 'm' : (s / 3600).toFixed(1) + 'h';
 
 function card(g) {
   const badge = g.hot ? '<span class="badge">HOT</span>' : g.new ? '<span class="badge new">NEW</span>' : '';
@@ -108,24 +119,33 @@ function card(g) {
     <button class="fav ${favs.has(g.id) ? 'on' : ''}" data-fav="${g.id}" title="Favorite">★</button>
     <div class="name">${esc(g.t)}</div></a>`;
 }
-const shelf = (title, list) => list.length ? `<h2>${title} <small>${list.length}</small></h2><div class="row">${list.map(card).join('')}</div>` : '';
+const shelf = (title, list) => list.length ? `<h2>${title} <small>${list.length}</small></h2><div class="rowwrap"><button class="arrow l" data-scroll="-1">‹</button><div class="row">${list.map(card).join('')}</div><button class="arrow r" data-scroll="1">›</button></div>` : '';
 
 function render() {
   const q = $('q').value.trim();
-  let list = cat === 'all' ? games : cat === 'favorites' ? games.filter(g => favs.has(g.id)) : cat === 'hot' ? games.filter(g => g.hot) : games.filter(g => g.c.includes(cat));
+  list = cat === 'all' ? games : cat === 'favorites' ? games.filter(g => favs.has(g.id)) : cat === 'hot' ? games.filter(g => g.hot) : games.filter(g => g.c.includes(cat));
   if (q) list = search(q, list);
   $('shelves').innerHTML = q || cat !== 'all' ? '' :
     shelf('▶ Continue playing', recent.map(id => byId[id]).filter(Boolean)) +
     shelf('★ Favorites', games.filter(g => favs.has(g.id))) +
     shelf('🔥 Popular', games.filter(g => g.hot).sort(() => .5 - Math.random()).slice(0, 24));
+  document.querySelectorAll('.rowwrap').forEach(w => w.classList.toggle('fit', w.querySelector('.row').scrollWidth <= w.clientWidth + 4));
   $('allTitle').innerHTML = (q ? `Results for “${esc(q)}”` : cat === 'all' ? 'All games' : cat[0].toUpperCase() + cat.slice(1)) + ` <small>${list.length}</small>`;
-  $('grid').innerHTML = list.length ? list.map(card).join('') : `<div class="empty">Nothing found for “${esc(q)}”. Try fewer words.</div>`;
+  $('grid').innerHTML = list.length ? '' : `<div class="empty">Nothing found for “${esc(q)}”. Try fewer words.</div>`;
+  shown = 0; more();
 }
+// tens of thousands of cards: add 120 at a time as you scroll
+function more() {
+  if (shown >= list.length) return;
+  $('grid').insertAdjacentHTML('beforeend', list.slice(shown, shown + 120).map(card).join(''));
+  shown += 120;
+}
+new IntersectionObserver(e => e[0].isIntersecting && more(), { rootMargin: '1200px' }).observe($('more'));
 
 function chips() {
   const counts = {};
   games.forEach(g => g.c.forEach(c => counts[c] = (counts[c] || 0) + 1));
-  const cats = ['all', 'favorites', 'hot', ...Object.keys(counts).sort((a, b) => counts[b] - counts[a])];
+  const cats = ['all', 'favorites', 'hot', ...Object.keys(counts).filter(c => counts[c] >= 40).sort((a, b) => counts[b] - counts[a])];
   if (!cats.includes(cat)) cat = 'all';
   $('chips').innerHTML = cats.map(c => `<button class="chip ${c === cat ? 'on' : ''}" data-cat="${c}">${{ all: '🎮 All', favorites: '★ Favorites', hot: '🔥 Popular' }[c] || c.replace('-', ' ')}</button>`).join('');
 }
@@ -138,14 +158,14 @@ function play(id) { location.hash = 'play/' + id; }
 function home() { $('q').value = ''; cat = 'all'; chips(); location.hash = ''; render(); scrollTo(0, 0); }
 
 function route() {
-  const m = location.hash.match(/^#play\/(\d+)/), g = m && byId[m[1]];
+  const m = location.hash.match(/^#play\/([\w-]+)/), g = m && byId[m[1]];
   stopTimer();
   if (!g) { playing = null; load('about:blank'); $('player').classList.remove('open'); document.title = 'Pineapple Arcade'; render(); return; }
   playing = g.id; started = Date.now();
   recent = [g.id, ...recent.filter(x => x !== g.id)].slice(0, 20); store.set('recent', recent);
   $('player').classList.add('open');
   $('ptitle').textContent = g.t; document.title = g.t + ' · Pineapple Arcade';
-  if (frame.src !== g.u) load(g.u);
+  if (frame.src !== g.u) { load(g.u); window.goatcounter?.count?.({ path: 'play/' + g.t, title: g.t, event: true }); }
   favBtn();
   const rel = games.filter(x => x.id !== g.id && x.c.some(c => g.c.includes(c))).sort(() => .5 - Math.random()).slice(0, 12);
   $('related').innerHTML = rel.map(card).join('');
@@ -161,7 +181,7 @@ function backup() {
 $('restore').onchange = async e => {
   try {
     const d = JSON.parse(await e.target.files[0].text());
-    favs = new Set(d.favs || []); recent = d.recent || []; time = d.time || {};
+    favs = new Set((d.favs || []).map(String)); recent = (d.recent || []).map(String); time = d.time || {};
     store.set('favs', [...favs]); store.set('recent', recent); store.set('time', time); render(); alert('Restored!');
   } catch { alert('That file isn’t a Pineapple Arcade backup.'); }
   e.target.value = '';
@@ -169,7 +189,9 @@ $('restore').onchange = async e => {
 
 document.addEventListener('click', e => {
   const f = e.target.closest('[data-fav]');
-  if (f) { e.preventDefault(); toggleFav(+f.dataset.fav); f.classList.toggle('on'); if (cat === 'favorites') render(); return; }
+  if (f) { e.preventDefault(); toggleFav(f.dataset.fav); f.classList.toggle('on'); if (cat === 'favorites') render(); return; }
+  const a = e.target.closest('[data-scroll]');
+  if (a) { const r = a.parentNode.querySelector('.row'); r.scrollLeft += a.dataset.scroll * r.clientWidth * .85; return; }
   const c = e.target.closest('[data-cat]');
   if (c) { cat = c.dataset.cat; store.set('cat', cat); chips(); render(); }
 });
@@ -182,7 +204,15 @@ addEventListener('pagehide', stopTimer);
 document.addEventListener('visibilitychange', () => document.hidden ? stopTimer() : playing && (started = Date.now()));
 
 fetch('games.json').then(r => r.json()).then(d => {
-  games = d; games.forEach(g => byId[g.id] = g);
+  const src = {
+    gd: k => [`https://html5.gamedistribution.com/${k}/`, `https://img.gamedistribution.com/${k}-512x512.jpg`],
+    gm: k => [`https://html5.gamemonetize.co/${k}/`, `https://img.gamemonetize.com/${k}/512x384.jpg`]
+  };
+  games = d;
+  for (const g of games) {
+    if (g.s) { [g.u, g.img] = src[g.s](g.k); g.id = g.s + '-' + g.k.slice(0, 10); }
+    g.id = String(g.id); byId[g.id] = g;
+  }
   chips(); route();
 });
 </script>
