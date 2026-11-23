@@ -48,6 +48,7 @@ html,.side{scrollbar-width:thin;scrollbar-color:#3a3a60 transparent}
 .fav{position:absolute;top:6px;right:6px;width:30px;height:30px;border-radius:50%;border:0;background:rgba(0,0,0,.55);color:#fff;cursor:pointer;font-size:15px;opacity:0;transition:.15s}
 .card:hover .fav,.fav.on{opacity:1}.fav.on{color:var(--a)}
 .empty{color:var(--dim);padding:40px 0;text-align:center}
+.ad{margin:22px 0 4px;display:flex;justify-content:center;overflow:hidden}.ad:empty{display:none}
 #player{position:fixed;inset:0;z-index:10;background:var(--bg);display:none;flex-direction:column}
 #player.open{display:flex}
 .pbar{display:flex;gap:10px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--panel)}
@@ -76,6 +77,7 @@ html,.side{scrollbar-width:thin;scrollbar-color:#3a3a60 transparent}
 <main>
   <div class="chips" id="chips"></div>
   <div id="shelves"></div>
+  <div class="ad" id="ad-home"><!-- paste banner ad code here (stays hidden while empty) --></div>
   <h2 id="allTitle"></h2>
   <div class="grid" id="grid"></div>
   <div id="more"></div>
@@ -91,7 +93,7 @@ html,.side{scrollbar-width:thin;scrollbar-color:#3a3a60 transparent}
   </div>
   <div class="pwrap">
     <iframe id="frame" allow="fullscreen; autoplay; gamepad; pointer-lock; clipboard-write" allowfullscreen></iframe>
-    <div class="side"><div class="note">💾 Your progress saves automatically on this device. More like this:</div><div id="related" style="display:contents"></div></div>
+    <div class="side"><div class="ad" id="ad-side"><!-- paste a 160-250px-wide ad code here --></div><div class="note">💾 Your progress saves automatically on this device. More like this:</div><div id="related" style="display:contents"></div></div>
   </div>
 </div>
 <script src="search.js"></script>
@@ -211,6 +213,8 @@ fetch('games.json').then(r => r.json()).then(d => {
   games = d;
   for (const g of games) {
     if (g.s) { [g.u, g.img] = src[g.s](g.k); g.id = g.s + '-' + g.k.slice(0, 10); }
+    // GameDistribution's standard embed param: credits ad revenue share to this site once it's registered as a publisher domain
+    if (g.s === 'gd') g.u += '?gd_sdk_referrer_url=' + encodeURIComponent(location.origin + location.pathname + '#play/' + g.id);
     g.id = String(g.id); byId[g.id] = g;
     g.ads = g.id.includes('-'); // GameDistribution/GameMonetize games run their own ads; the original 895 don't
   }
