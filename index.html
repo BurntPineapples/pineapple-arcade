@@ -48,9 +48,6 @@ html,.side{scrollbar-width:thin;scrollbar-color:#3a3a60 transparent}
 .fav{position:absolute;top:6px;right:6px;width:30px;height:30px;border-radius:50%;border:0;background:rgba(0,0,0,.55);color:#fff;cursor:pointer;font-size:15px;opacity:0;transition:.15s}
 .card:hover .fav,.fav.on{opacity:1}.fav.on{color:var(--a)}
 .empty{color:var(--dim);padding:40px 0;text-align:center}
-.cloudrow{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
-.cloud{padding:20px 22px;min-height:120px;color:#fff;border:0}
-.cloud b{display:block;font-size:22px;letter-spacing:-.3px}.cloud span{opacity:.85;font-size:14px}.cloud i{position:absolute;right:16px;bottom:12px;font-style:normal;font-size:12px;opacity:.75}
 .ad{margin:22px 0 4px;display:flex;justify-content:center;overflow:hidden}.ad:empty{display:none}
 #player{position:fixed;inset:0;z-index:10;background:var(--bg);display:none;flex-direction:column}
 #player.open{display:flex}
@@ -124,14 +121,6 @@ function card(g) {
     <button class="fav ${favs.has(g.id) ? 'on' : ''}" data-fav="${g.id}" title="Favorite">★</button>
     <div class="name">${esc(g.t)}</div></a>`;
 }
-// cloud services block iframes (X-Frame-Options), so they open in their own tab
-const CLOUD = [
-  { t: 'GeForce NOW', d: 'Stream your Steam & Epic games, free tier available', u: 'https://play.geforcenow.com/', bg: 'linear-gradient(135deg,#76b900,#173300)' },
-  { t: 'Xbox Cloud Gaming', d: 'Fortnite free to stream, Game Pass for the rest', u: 'https://www.xbox.com/play', bg: 'linear-gradient(135deg,#107c10,#062306)' }
-];
-const cloudShelf = () => `<h2>☁ Cloud gaming <small>big console & PC games, sign-in needed</small></h2><div class="cloudrow">${CLOUD.map(c =>
-  `<a class="card cloud" href="${c.u}" target="_blank" rel="noopener" style="background:${c.bg}"><b>${c.t}</b><span>${c.d}</span><i>opens in new tab ↗</i></a>`).join('')}</div>`;
-
 // "Suggested for you": weight categories by favorites, recent plays and play time, then pick unplayed games from them
 function suggested() {
   const w = {}, seen = new Set([...recent, ...favs]);
@@ -154,7 +143,6 @@ function render() {
     shelf('▶ Continue playing', recent.map(id => byId[id]).filter(Boolean)) +
     shelf('✨ Suggested for you', suggested()) +
     shelf('★ Favorites', games.filter(g => favs.has(g.id))) +
-    cloudShelf() +
     shelf('🔥 Popular', games.filter(g => g.hot).sort(() => .5 - Math.random()).slice(0, 24));
   document.querySelectorAll('.rowwrap').forEach(w => w.classList.toggle('fit', w.querySelector('.row').scrollWidth <= w.clientWidth + 4));
   $('allTitle').innerHTML = (q ? `Results for “${esc(q)}”` : cat === 'all' ? 'All games' : cat === 'noads' ? 'No-ad games' : cat[0].toUpperCase() + cat.slice(1)) + ` <small>${list.length}</small>`;
