@@ -5,7 +5,7 @@ from datetime import date, timedelta
 
 site, token, hook = os.environ.get("GC_SITE", "burntpineapples"), os.environ["GOATCOUNTER_TOKEN"], os.environ["WEBHOOK_URL"]
 day = date.today() - timedelta(days=1)
-q = f"start={day}&end={day}"
+q = f"start={day}T00:00:00Z&end={day}T23:59:59Z"  # date-only start/end makes stats/total 404
 
 def api(path):
     req = urllib.request.Request(f"https://{site}.goatcounter.com/api/v0/{path}",
