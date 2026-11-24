@@ -7,4 +7,4 @@ Play: https://burntpineapples.github.io/pineapple-arcade/
 Test the search: `node test-search.js`
 
 ## Daily stats
-Anonymous visit and play counts go to GoatCounter (`pineapplearcade.goatcounter.com`). `.github/workflows/daily-stats.yml` posts yesterday's summary to the `WEBHOOK_URL` secret every morning; it also needs a `GOATCOUNTER_TOKEN` secret.
+Anonymous visit and play counts go to GoatCounter (`burntpineapples.goatcounter.com`). `.github/workflows/daily-stats.yml` posts yesterday's summary to the `WEBHOOK_URL` secret every morning; it also needs a `GOATCOUNTER_TOKEN` secret.

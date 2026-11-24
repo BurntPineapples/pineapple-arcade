@@ -1,9 +1,9 @@
 # Posts yesterday's GoatCounter stats to a webhook (Discord or Slack).
-# Env: GOATCOUNTER_TOKEN, WEBHOOK_URL, GC_SITE (e.g. pineapplearcade)
+# Env: GOATCOUNTER_TOKEN, WEBHOOK_URL, GC_SITE (e.g. burntpineapples)
 import json, os, urllib.request
 from datetime import date, timedelta
 
-site, token, hook = os.environ.get("GC_SITE", "pineapplearcade"), os.environ["GOATCOUNTER_TOKEN"], os.environ["WEBHOOK_URL"]
+site, token, hook = os.environ.get("GC_SITE", "burntpineapples"), os.environ["GOATCOUNTER_TOKEN"], os.environ["WEBHOOK_URL"]
 day = date.today() - timedelta(days=1)
 q = f"start={day}&end={day}"
 
