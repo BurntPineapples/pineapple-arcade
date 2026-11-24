@@ -58,6 +58,10 @@ html,.side{scrollbar-width:thin;scrollbar-color:#3a3a60 transparent}
 .side{width:250px;overflow-y:auto;padding:12px;border-left:1px solid var(--line);display:flex;flex-direction:column;gap:10px}
 .side .card{flex:none}.side .thumb{aspect-ratio:16/10}.side .card .name{font-size:13px}
 .note{color:var(--dim);font-size:12px;padding:4px 2px}
+dialog{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:18px;padding:20px;width:min(420px,90vw)}
+dialog::backdrop{background:rgba(0,0,0,.6)}dialog h2{margin-top:0}
+dialog form{display:flex;flex-direction:column;gap:10px}
+dialog input{padding:11px 14px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--text);font:inherit}
 @media(max-width:800px){header{flex-wrap:wrap;padding:12px}.search{order:3;flex-basis:100%;max-width:none}.side{display:none}main{padding:12px}.hide-sm{display:none}}
 </style>
 </head>
@@ -73,7 +77,15 @@ html,.side{scrollbar-width:thin;scrollbar-color:#3a3a60 transparent}
   <button class="btn hide-sm" onclick="backup()" title="Download favorites, history & play time">⬇ Backup</button>
   <button class="btn hide-sm" onclick="document.getElementById('restore').click()" title="Restore from a backup file">⬆ Restore</button>
   <input id="restore" type="file" accept=".json" hidden>
+  <button class="btn" onclick="suggest()" title="Suggest a game we should add">💡 Suggest</button>
 </header>
+<dialog id="sug"><form method="dialog" onsubmit="sendSuggestion()">
+  <h2>💡 Suggest a game</h2>
+  <p class="note">Tell us a game you want on Pineapple Arcade.</p>
+  <input id="sugName" required maxlength="80" placeholder="Game name">
+  <input id="sugNote" maxlength="150" placeholder="Link or note (optional)">
+  <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" type="button" onclick="$('sug').close()">Cancel</button><button class="btn hot">Send</button></div>
+</form></dialog>
 <main>
   <div class="chips" id="chips"></div>
   <div id="shelves"></div>
@@ -146,7 +158,7 @@ function render() {
     shelf('🔥 Popular', games.filter(g => g.hot).sort(() => .5 - Math.random()).slice(0, 24));
   document.querySelectorAll('.rowwrap').forEach(w => w.classList.toggle('fit', w.querySelector('.row').scrollWidth <= w.clientWidth + 4));
   $('allTitle').innerHTML = (q ? `Results for “${esc(q)}”` : cat === 'all' ? 'All games' : cat === 'noads' ? 'No-ad games' : cat[0].toUpperCase() + cat.slice(1)) + ` <small>${list.length}</small>`;
-  $('grid').innerHTML = list.length ? '' : `<div class="empty">Nothing found for “${esc(q)}”. Try fewer words.</div>`;
+  $('grid').innerHTML = list.length ? '' : `<div class="empty">Nothing found for “${esc(q)}”. Try fewer words, or <a href="#" onclick="suggest($('q').value);return false" style="color:var(--a)">suggest it</a>.</div>`;
   shown = 0; more();
 }
 // tens of thousands of cards: add 120 at a time as you scroll
@@ -188,6 +200,13 @@ function route() {
 function favBtn() { $('pfav').textContent = favs.has(playing) ? '★ Favorited' : '☆ Favorite'; }
 function toggleFav(id) { favs.has(id) ? favs.delete(id) : favs.add(id); store.set('favs', [...favs]); }
 
+// suggestions ride along as GoatCounter events; the daily stats job posts them to the webhook (keeps the webhook URL secret)
+function suggest(name = '') { $('sugName').value = name; $('sugNote').value = ''; $('sug').showModal(); }
+function sendSuggestion() {
+  const t = [$('sugName').value, $('sugNote').value].map(s => s.trim()).filter(Boolean).join(' | ');
+  window.goatcounter?.count?.({ path: 'suggest/' + t, title: t, event: true });
+  alert('Thanks! Your suggestion was sent.');
+}
 function backup() {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([JSON.stringify({ favs: [...favs], recent, time })], { type: 'application/json' }));

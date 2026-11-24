@@ -19,8 +19,9 @@ def top(path, n=5):
 
 try:
     total = api(f"stats/total?{q}")
-    hits = api(f"stats/hits?{q}&limit=50").get("hits", [])
-    plays = sorted((h for h in hits if h.get("event")), key=lambda h: -h["count"])
+    hits = api(f"stats/hits?{q}&limit=100").get("hits", [])
+    plays = sorted((h for h in hits if h.get("event") and h["path"].startswith("play/")), key=lambda h: -h["count"])
+    sugs = [h.get("title") or h["path"][8:] for h in hits if h["path"].startswith("suggest/")]
     lines = [
         f"🍍 **Pineapple Arcade, {day:%a %b %d}**",
         f"Page views: **{total.get('total', 0)}**   Game plays: **{total.get('total_events', sum(h['count'] for h in plays))}**",
@@ -28,11 +29,13 @@ try:
         "**From:** " + top("toprefs"),
         "**Countries:** " + top("locations"),
         "**Browsers:** " + top("browsers"),
+        "**💡 Suggestions:** " + ("\n• " + "\n• ".join(s[:150] for s in sugs[:20]) if sugs else "none"),
     ]
 except Exception as e:
     lines = [f"🍍 Pineapple Arcade stats failed for {day}: {e}"]
 
-msg = "\n".join(lines)
-body = json.dumps({"content": msg, "text": msg}).encode()
+msg = "\n".join(lines)[:1990]  # Discord caps messages at 2000 chars
+# allowed_mentions: visitor-typed suggestions can't ping @everyone
+body = json.dumps({"content": msg, "text": msg, "allowed_mentions": {"parse": []}}).encode()
 urllib.request.urlopen(urllib.request.Request(hook, body, {"Content-Type": "application/json", "User-Agent": "stats-bot"}), timeout=30)
 print(msg)
