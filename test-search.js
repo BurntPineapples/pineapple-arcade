@@ -19,6 +19,7 @@ has('unicycle', 'Unicycle Legend');
 has('papas', 'Papa Cheeseria', 10);
 has('fortnite', '1v1 LOL', 1);         // alias
 has('fortnight', '1v1 LOL', 1);
+has('minecraft', 'Minecraft Classic', 1);
 has('among us', 'Among Us SP', 1);
 assert(search('racing', games).length > 50, 'category words match');
 assert.strictEqual(search('zzqqxx', games).length, 0);
