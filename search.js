@@ -39,13 +39,15 @@ function score(q, game) {
   // normalized title parts cached on the game; 30k games re-normalized per keystroke is the slow part
   const p = game._p || (game._p = (() => {
     const title = norm(game.t), words = title.split(' ');
-    return { title, words, compact: title.replace(/ /g, ''), initials: words.map(w => w[0]).join(''), cats: (game.c || []).map(norm) };
+    return { title, words, compact: title.replace(/ /g, ''), initials: words.map(w => w[0]).join(''), cats: (game.c || []).map(norm), alias: (game.a || []).map(a => norm(a).replace(/ /g, '')) };
   })());
   const { title, words, compact, cats } = p;
   let s = 0;
   if (title === nq || compact === cq) s += 20;
   else if (compact.startsWith(cq)) s += 12;
   else if (compact.includes(cq)) s += 8;
+  // aliases: games people search for by another name ("fortnite" -> 1v1 LOL)
+  if (p.alias.some(a => a === cq || (cq.length >= 4 && a.startsWith(cq)) || (cq.length >= 6 && lev(cq, a) <= 2))) s += 25;
   if (cq.length >= 2 && p.initials.startsWith(cq)) s += 7; // initials: "fnf"
   const toks = nq.split(' ');
   let hit = 0;

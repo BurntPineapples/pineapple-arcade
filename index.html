@@ -41,7 +41,9 @@ html,.side{scrollbar-width:thin;scrollbar-color:#3a3a60 transparent}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px}
 .card{position:relative;border-radius:16px;overflow:hidden;background:var(--card);border:1px solid var(--line);cursor:pointer;transition:transform .15s,box-shadow .15s;text-decoration:none;display:block}
 .card:hover{transform:translateY(-4px) scale(1.02);box-shadow:0 12px 30px rgba(0,0,0,.5),0 0 0 2px var(--b)}
-.thumb{aspect-ratio:1;width:100%;object-fit:cover;display:block;background:linear-gradient(135deg,#2a1846,#10324a)}
+.thumb{aspect-ratio:1;width:100%;object-fit:cover;display:block;opacity:0;transition:opacity .35s}.thumb.ok{opacity:1}
+.card:not(.loaded){background:linear-gradient(110deg,#1d1736 35%,#2c2252 50%,#1d1736 65%) 0 0/300% 100%;animation:shim 1.3s linear infinite}
+@keyframes shim{to{background-position:-150% 0}}
 .card .name{position:absolute;inset:auto 0 0;padding:28px 10px 9px;background:linear-gradient(transparent,rgba(0,0,0,.88));font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .badge{position:absolute;top:8px;left:8px;font-size:11px;font-weight:800;padding:3px 7px;border-radius:7px;background:var(--b);color:#fff}
 .badge.new{background:var(--c);color:#04212e}
@@ -121,6 +123,7 @@ const store = {
 let games = [], byId = {}, favs = new Set(store.get('favs', []).map(String)), recent = store.get('recent', []).map(String), time = store.get('time', {});
 let list = [], shown = 0;
 let cat = store.get('cat', 'all'), playing = null, started = 0;
+navigator.serviceWorker?.register('sw.js'); // caches thumbnails so they show instantly on later visits
 navigator.storage?.persist?.(); // ask browser not to evict game saves
 
 const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
@@ -129,7 +132,7 @@ const rand = () => games[Math.random() * games.length | 0].id;
 function card(g) {
   const badge = g.hot ? '<span class="badge">HOT</span>' : g.new ? '<span class="badge new">NEW</span>' : '';
   return `<a class="card" href="#play/${g.id}" title="${esc(g.t)}">${badge}
-    <img class="thumb" loading="lazy" src="${g.img}" alt="" onerror="this.style.visibility='hidden'">
+    <img class="thumb" loading="lazy" decoding="async" src="${g.img}" alt="" onload="this.classList.add('ok');this.parentNode.classList.add('loaded')" onerror="this.parentNode.classList.add('loaded')">
     <button class="fav ${favs.has(g.id) ? 'on' : ''}" data-fav="${g.id}" title="Favorite">★</button>
     <div class="name">${esc(g.t)}</div></a>`;
 }
